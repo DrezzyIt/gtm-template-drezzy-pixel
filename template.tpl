@@ -44,7 +44,14 @@ ___SANDBOXED_JS_FOR_WEB_TEMPLATE___
 
 const copyFromDataLayer = require('copyFromDataLayer');
 const encodeUriComponent = require('encodeUriComponent');
+const logToConsole = require('logToConsole');
 const sendPixel = require('sendPixel');
+
+const drtp_mk = data.merchantKey.trim();
+if (!drtp_mk) {
+  logToConsole("drezzy pixel: chiave merchant non definita");
+  data.gtmOnFailure();
+}
 
 const purchase = copyFromDataLayer('ecommerce.purchase');
 const drtp_oid = purchase.actionField.id;
@@ -55,7 +62,7 @@ purchase.products.forEach((product) =>
 );
 
 const drtp_pixel = "https://www.drezzy.it/api/orders/v1.0/tr.gif?" +
-      "merchant_name=" + encodeUriComponent(data.merchantKey.trim()) +
+      "merchant_name=" + encodeUriComponent(drtp_mk) +
       "&order_id=" + encodeUriComponent(drtp_oid) +
       jsonToQueryString(drtp_line_items, "items") +
       "&amount=" + encodeUriComponent(drtp_oa);
@@ -140,6 +147,24 @@ ___WEB_PERMISSIONS___
       "isEditedByUser": true
     },
     "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "logging",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "environments",
+          "value": {
+            "type": 1,
+            "string": "debug"
+          }
+        }
+      ]
+    },
+    "isRequired": true
   }
 ]
 
@@ -203,6 +228,35 @@ scenarios:
     runCode(mockData);
 
     assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
+- name: Fail if merchant key not defined
+  code: |
+    // This test is expected to fail because gtmOnSuccess is not called
+
+    mock('copyFromDataLayer', (key) => {
+      if (key === 'ecommerce.purchase') {
+        return {
+          actionField: {
+            id: 'order1234',
+            revenue: 100.0,
+          },
+          products: [
+            {
+              name: 'product name',
+              id: 'sku123',
+            },
+          ],
+        };
+      }
+    });
+
+    const mockData = {
+      merchantKey: ''
+    };
+
+    runCode(mockData);
+
+    assertApi('logToConsole').wasCalledWith("drezzy pixel: chiave merchant non definita");
+    assertApi('gtmOnFailure').wasCalled();
 setup: |
   // Workaround needed to use the sendPixel wasCalledWith assertion
   var success, failure;
@@ -215,6 +269,6 @@ setup: |
 
 ___NOTES___
 
-Created on 8/11/2022, 3:43:59 PM
+Created on 8/11/2022, 3:56:04 PM
 
 
