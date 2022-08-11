@@ -46,23 +46,19 @@ const copyFromDataLayer = require('copyFromDataLayer');
 const encodeUriComponent = require('encodeUriComponent');
 const sendPixel = require('sendPixel');
 
-
-const drtp_oid = copyFromDataLayer('ecommerce.purchase.actionField.id');
-const drtp_oa = copyFromDataLayer('ecommerce.purchase.actionField.revenue');
-const drtp_products = copyFromDataLayer('ecommerce.purchase.products');
+const purchase = copyFromDataLayer('ecommerce.purchase');
+const drtp_oid = purchase.actionField.id;
+const drtp_oa = purchase.actionField.revenue;
 const drtp_line_items = [];
-drtp_products.forEach((product) =>
+purchase.products.forEach((product) =>
   drtp_line_items.push({ sku: product.id, product_name: product.name })
 );
 
-const drtp_pixel =
-  "https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=" +
-  encodeUriComponent(data.merchantKey.trim()) +
-  "&order_id=" +
-  encodeUriComponent(drtp_oid) +
-  jsonToQueryString(drtp_line_items, "items") +
-  "&amount=" +
-  encodeUriComponent(drtp_oa);
+const drtp_pixel = "https://www.drezzy.it/api/orders/v1.0/tr.gif?" +
+      "merchant_name=" + encodeUriComponent(data.merchantKey.trim()) +
+      "&order_id=" + encodeUriComponent(drtp_oid) +
+      jsonToQueryString(drtp_line_items, "items") +
+      "&amount=" + encodeUriComponent(drtp_oa);
 
 sendPixel(drtp_pixel, data.gtmOnSuccess, data.gtmOnFailure);
 
@@ -150,11 +146,75 @@ ___WEB_PERMISSIONS___
 
 ___TESTS___
 
-scenarios: []
+scenarios:
+- name: Order with one item
+  code: |
+    mock('copyFromDataLayer', (key) => {
+      if (key === 'ecommerce.purchase') {
+        return {
+          actionField: {
+            id: 'order1234',
+            revenue: 100.0,
+          },
+          products: [
+            {
+              name: 'product name',
+              id: 'sku123',
+            },
+          ],
+        };
+      }
+    });
+
+    const mockData = {
+      merchantKey: 'merchantkey123'
+    };
+
+    runCode(mockData);
+
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=100', success, failure);
+- name: Order with multiple items
+  code: |
+    mock('copyFromDataLayer', (key) => {
+      if (key === 'ecommerce.purchase') {
+        return {
+          actionField: {
+            id: 'order1234',
+            revenue: 100.0,
+          },
+          products: [
+            {
+              name: 'product name',
+              id: 'sku123',
+            },
+            {
+              name: 'product name 2',
+              id: 'sku321',
+            },
+          ],
+        };
+      }
+    });
+
+    const mockData = {
+      merchantKey: 'merchantkey123'
+    };
+
+    runCode(mockData);
+
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
+setup: |
+  // Workaround needed to use the sendPixel wasCalledWith assertion
+  var success, failure;
+
+  mock('sendPixel', (url, onSuccess, onFailure) => {
+    success = onSuccess;
+    failure = onFailure;
+  });
 
 
 ___NOTES___
 
-Created on 8/11/2022, 9:11:06 AM
+Created on 8/11/2022, 3:43:59 PM
 
 
