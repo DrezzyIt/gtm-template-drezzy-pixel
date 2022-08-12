@@ -62,7 +62,7 @@ if (!purchase) {
 }
 
 const drtp_mk = data.merchantKey.trim();
-const drtp_oid = purchase.actionField.id;
+const drtp_oid = purchase.actionField.id + '_gtm'; // remove this suffix after test phase
 const drtp_oa = purchase.actionField.revenue;
 const drtp_line_items = [];
 purchase.products.forEach((product) =>
@@ -208,7 +208,7 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=100', success, failure);
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=100', success, failure);
 - name: Order with multiple items
   code: |
     mock('copyFromDataLayer', (key) => {
@@ -238,7 +238,7 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
 - name: Fail if merchant key not defined
   code: |
     // This test is expected to fail because gtmOnSuccess is not called (weird behaviour)
@@ -296,6 +296,6 @@ setup: |-
 
 ___NOTES___
 
-Created on 8/12/2022, 9:50:40 AM
+Created on 8/12/2022, 10:23:03 AM
 
 
