@@ -47,13 +47,21 @@ const encodeUriComponent = require('encodeUriComponent');
 const logToConsole = require('logToConsole');
 const sendPixel = require('sendPixel');
 
-const drtp_mk = data.merchantKey.trim();
-if (!drtp_mk) {
+
+if (!(data.hasOwnProperty('merchantKey'))) {
   logToConsole("drezzy pixel: chiave merchant non definita");
   data.gtmOnFailure();
+  return;
 }
 
 const purchase = copyFromDataLayer('ecommerce.purchase');
+if (!purchase) {
+  logToConsole("drezzy pixel: enhanced ecommerce purchase measurment non definita");
+  data.gtmOnFailure();
+  return;
+}
+
+const drtp_mk = data.merchantKey.trim();
 const drtp_oid = purchase.actionField.id;
 const drtp_oa = purchase.actionField.revenue;
 const drtp_line_items = [];
@@ -164,6 +172,9 @@ ___WEB_PERMISSIONS___
         }
       ]
     },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
     "isRequired": true
   }
 ]
@@ -230,7 +241,7 @@ scenarios:
     assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
 - name: Fail if merchant key not defined
   code: |
-    // This test is expected to fail because gtmOnSuccess is not called
+    // This test is expected to fail because gtmOnSuccess is not called (weird behaviour)
 
     mock('copyFromDataLayer', (key) => {
       if (key === 'ecommerce.purchase') {
@@ -249,15 +260,31 @@ scenarios:
       }
     });
 
-    const mockData = {
-      merchantKey: ''
-    };
+    const mockData = {}; // merchant key object property missing if not defined in ui
 
     runCode(mockData);
 
     assertApi('logToConsole').wasCalledWith("drezzy pixel: chiave merchant non definita");
     assertApi('gtmOnFailure').wasCalled();
-setup: |
+- name: Fail if enhanced ecommerce purchase not defined
+  code: |
+    // This test is expected to fail because gtmOnSuccess is not called (weird behaviour)
+
+    mock('copyFromDataLayer', (key) => {
+      if (key === 'ecommerce.purchase') {
+        return undefined;
+      }
+    });
+
+    const mockData = {
+      merchantKey: 'merchantkey123'
+    };
+
+    runCode(mockData);
+
+    assertApi('logToConsole').wasCalledWith("drezzy pixel: enhanced ecommerce purchase measurment non definita");
+    assertApi('gtmOnFailure').wasCalled();
+setup: |-
   // Workaround needed to use the sendPixel wasCalledWith assertion
   var success, failure;
 
@@ -269,6 +296,6 @@ setup: |
 
 ___NOTES___
 
-Created on 8/11/2022, 3:56:04 PM
+Created on 8/12/2022, 9:50:40 AM
 
 
