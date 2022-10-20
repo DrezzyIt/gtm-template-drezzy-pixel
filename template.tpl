@@ -14,7 +14,9 @@ ___INFO___
   "version": 1,
   "securityGroups": [],
   "displayName": "Drezzy Pixel",
-  "categories": ["CONVERSIONS"],
+  "categories": [
+    "CONVERSIONS"
+  ],
   "brand": {
     "id": "brand_dummy",
     "displayName": "",
@@ -56,7 +58,7 @@ if (!(data.hasOwnProperty('merchantKey'))) {
 
 const purchase = copyFromDataLayer('ecommerce.purchase');
 if (!purchase) {
-  logToConsole("drezzy pixel: enhanced ecommerce purchase measurment non definita");
+  logToConsole("drezzy pixel: purchase measurement non definita");
   data.gtmOnFailure();
   return;
 }
@@ -241,8 +243,6 @@ scenarios:
     assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
 - name: Fail if merchant key not defined
   code: |
-    // This test is expected to fail because gtmOnSuccess is not called (weird behaviour)
-
     mock('copyFromDataLayer', (key) => {
       if (key === 'ecommerce.purchase') {
         return {
@@ -268,8 +268,6 @@ scenarios:
     assertApi('gtmOnFailure').wasCalled();
 - name: Fail if enhanced ecommerce purchase not defined
   code: |
-    // This test is expected to fail because gtmOnSuccess is not called (weird behaviour)
-
     mock('copyFromDataLayer', (key) => {
       if (key === 'ecommerce.purchase') {
         return undefined;
@@ -282,7 +280,7 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('logToConsole').wasCalledWith("drezzy pixel: enhanced ecommerce purchase measurment non definita");
+    assertApi('logToConsole').wasCalledWith("drezzy pixel: purchase measurement non definita");
     assertApi('gtmOnFailure').wasCalled();
 setup: |-
   // Workaround needed to use the sendPixel wasCalledWith assertion
