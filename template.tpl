@@ -286,7 +286,7 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=100', success, failure);
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234_ga4_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=100', success, failure);
 - name: '[GA4] Order with multiple items'
   code: |
     mock('copyFromDataLayer', (key) => {
@@ -314,7 +314,7 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234_ga4_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
 - name: Fail if merchant key not defined
   code: |
     mock('copyFromDataLayer', (key) => {
