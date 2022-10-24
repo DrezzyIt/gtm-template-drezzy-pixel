@@ -106,8 +106,7 @@ function jsonToQueryString(obj, prefix) {
       var k = prefix ? prefix + '[' + p + ']' : p,
         v = obj[p];
       str.push(
-        v !== null && typeof v === 'object' ? jsonToQueryString(v, k)
-          : '&' + k + '=' + encodeUriComponent(v)
+        v !== null && typeof v === 'object' ? jsonToQueryString(v, k) : '&' + k + '=' + encodeUriComponent(v)
       );
     }
   }
