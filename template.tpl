@@ -49,50 +49,69 @@ const encodeUriComponent = require('encodeUriComponent');
 const logToConsole = require('logToConsole');
 const sendPixel = require('sendPixel');
 
-
-if (!(data.hasOwnProperty('merchantKey'))) {
-  logToConsole("drezzy pixel: chiave merchant non definita");
+if (!data.hasOwnProperty('merchantKey')) {
+  logToConsole('drezzy pixel: chiave merchant non definita');
   data.gtmOnFailure();
   return;
 }
 
-const purchase = copyFromDataLayer('ecommerce.purchase');
-if (!purchase) {
-  logToConsole("drezzy pixel: purchase measurement non definita");
+const ecommerce = copyFromDataLayer('ecommerce');
+if (!ecommerce) {
+  logToConsole('drezzy pixel: ecommerce not detected in the dataLayer');
   data.gtmOnFailure();
   return;
 }
 
+let drtp_oid, drtp_oa, drtp_line_items;
+if (ecommerce.transaction_id) {
+  // GA4
+  drtp_oid = ecommerce.transaction_id + '_ga4_gtm'; // remove this suffix after test phase
+  drtp_oa = ecommerce.value;
+  drtp_line_items = [];
+  ecommerce.items.forEach((item) =>
+    drtp_line_items.push({ sku: item.item_id, product_name: item.item_name })
+  );
+} else if (ecommerce.purchase) {
+  // UA
+  const purchase = ecommerce.purchase;
+  drtp_oid = purchase.actionField.id + '_gtm'; // remove this suffix after test phase
+  drtp_oa = purchase.actionField.revenue;
+  drtp_line_items = [];
+  purchase.products.forEach((product) =>
+    drtp_line_items.push({ sku: product.id, product_name: product.name })
+  );
+} else {
+  logToConsole('drezzy pixel: purchase measurement not defined');
+  data.gtmOnFailure();
+  return;
+}
 const drtp_mk = data.merchantKey.trim();
-const drtp_oid = purchase.actionField.id + '_gtm'; // remove this suffix after test phase
-const drtp_oa = purchase.actionField.revenue;
-const drtp_line_items = [];
-purchase.products.forEach((product) =>
-  drtp_line_items.push({ sku: product.id, product_name: product.name })
-);
 
-const drtp_pixel = "https://www.drezzy.it/api/orders/v1.0/tr.gif?" +
-      "merchant_name=" + encodeUriComponent(drtp_mk) +
-      "&order_id=" + encodeUriComponent(drtp_oid) +
-      jsonToQueryString(drtp_line_items, "items") +
-      "&amount=" + encodeUriComponent(drtp_oa);
-
+const drtp_pixel =
+  'https://www.drezzy.it/api/orders/v1.0/tr.gif?' +
+  'merchant_name=' +
+  encodeUriComponent(drtp_mk) +
+  '&order_id=' +
+  encodeUriComponent(drtp_oid) +
+  jsonToQueryString(drtp_line_items, 'items') +
+  '&amount=' +
+  encodeUriComponent(drtp_oa);
 sendPixel(drtp_pixel, data.gtmOnSuccess, data.gtmOnFailure);
-
 
 function jsonToQueryString(obj, prefix) {
   var str = [],
     p;
   for (p in obj) {
     if (obj.hasOwnProperty(p)) {
-      var k = prefix ? prefix + "[" + p + "]" : p,
+      var k = prefix ? prefix + '[' + p + ']' : p,
         v = obj[p];
       str.push(
-        v !== null && typeof v === "object" ? jsonToQueryString(v, k) : "&" + k + "=" + encodeUriComponent(v)
+        v !== null && typeof v === 'object' ? jsonToQueryString(v, k)
+          : '&' + k + '=' + encodeUriComponent(v)
       );
     }
   }
-  return str.join("");
+  return str.join('');
 }
 
 
@@ -146,7 +165,7 @@ ___WEB_PERMISSIONS___
             "listItem": [
               {
                 "type": 1,
-                "string": "ecommerce.purchase.*"
+                "string": "ecommerce.*"
               }
             ]
           }
@@ -185,19 +204,77 @@ ___WEB_PERMISSIONS___
 ___TESTS___
 
 scenarios:
-- name: Order with one item
+- name: '[GA3] Order with one item'
   code: |
     mock('copyFromDataLayer', (key) => {
-      if (key === 'ecommerce.purchase') {
+      if (key === 'ecommerce') {
         return {
-          actionField: {
-            id: 'order1234',
-            revenue: 100.0,
-          },
-          products: [
+          purchase: {
+            actionField: {
+              id: 'order1234',
+              revenue: 100.0,
+            },
+            products: [
+              {
+                name: 'product name',
+                id: 'sku123',
+              },
+            ],
+          }
+        };
+      }
+    });
+
+    const mockData = {
+      merchantKey: 'merchantkey123'
+    };
+
+    runCode(mockData);
+
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=100', success, failure);
+- name: '[GA3] Order with multiple items'
+  code: |
+    mock('copyFromDataLayer', (key) => {
+      if (key === 'ecommerce') {
+        return {
+          purchase: {
+            actionField: {
+              id: 'order1234',
+              revenue: 100.0,
+            },
+            products: [
+              {
+                name: 'product name',
+                id: 'sku123',
+              },
+              {
+                name: 'product name 2',
+                id: 'sku321',
+              },
+            ],
+          }
+        };
+      }
+    });
+
+    const mockData = {
+      merchantKey: 'merchantkey123'
+    };
+
+    runCode(mockData);
+
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
+- name: '[GA4] Order with one item'
+  code: |
+    mock('copyFromDataLayer', (key) => {
+      if (key === 'ecommerce') {
+        return {
+          transaction_id: 'order1234',
+          value: 100.0,
+          items: [
             {
-              name: 'product name',
-              id: 'sku123',
+              item_name: 'product name',
+              item_id: 'sku123',
             },
           ],
         };
@@ -211,23 +288,21 @@ scenarios:
     runCode(mockData);
 
     assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.gif?merchant_name=merchantkey123&order_id=order1234_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=100', success, failure);
-- name: Order with multiple items
+- name: '[GA4] Order with multiple items'
   code: |
     mock('copyFromDataLayer', (key) => {
-      if (key === 'ecommerce.purchase') {
+      if (key === 'ecommerce') {
         return {
-          actionField: {
-            id: 'order1234',
-            revenue: 100.0,
-          },
-          products: [
+          transaction_id: 'order1234',
+          value: 100.0,
+          items: [
             {
-              name: 'product name',
-              id: 'sku123',
+              item_name: 'product name',
+              item_id: 'sku123',
             },
             {
-              name: 'product name 2',
-              id: 'sku321',
+              item_name: 'product name 2',
+              item_id: 'sku321',
             },
           ],
         };
@@ -269,7 +344,7 @@ scenarios:
 - name: Fail if enhanced ecommerce purchase not defined
   code: |
     mock('copyFromDataLayer', (key) => {
-      if (key === 'ecommerce.purchase') {
+      if (key === 'ecommerce') {
         return undefined;
       }
     });
@@ -280,7 +355,23 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('logToConsole').wasCalledWith("drezzy pixel: purchase measurement non definita");
+    assertApi('logToConsole').wasCalledWith("drezzy pixel: ecommerce not detected in the dataLayer");
+    assertApi('gtmOnFailure').wasCalled();
+- name: Fail if purchase not defined
+  code: |
+    mock('copyFromDataLayer', (key) => {
+      if (key === 'ecommerce') {
+        return {};
+      }
+    });
+
+    const mockData = {
+      merchantKey: 'merchantkey123'
+    };
+
+    runCode(mockData);
+
+    assertApi('logToConsole').wasCalledWith("drezzy pixel: purchase measurement not defined");
     assertApi('gtmOnFailure').wasCalled();
 setup: |-
   // Workaround needed to use the sendPixel wasCalledWith assertion
