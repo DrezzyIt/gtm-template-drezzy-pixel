@@ -48,9 +48,9 @@ ___TEMPLATE_PARAMETERS___
       {
         "type": "CHECKBOX",
         "name": "valueIncludesTaxAndShipping",
-        "checkboxText": "Il valore dell\u0027ordine include tasse e spese di spedizione",
+        "checkboxText": "Il valore dell\u0027ordine include le tasse e le spese di spedizione",
         "simpleValueType": true,
-        "help": "Il campo del dataLayer contenente il totale del carrello (value per GA4 o revenue per UA) include le spese di spedizione e le tasse.",
+        "help": "Il campo del dataLayer contenente il totale del carrello, value per GA4 o revenue per UA, include i valori dei campi tax e shipping.",
         "defaultValue": true
       }
     ]
