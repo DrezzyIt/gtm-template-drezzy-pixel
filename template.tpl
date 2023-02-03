@@ -38,6 +38,22 @@ ___TEMPLATE_PARAMETERS___
     "displayName": "Chiave Merchant",
     "simpleValueType": true,
     "help": "Inserire qui la chiave merchant che ti è stata fornita dal referente commerciale Drezzy"
+  },
+  {
+    "type": "GROUP",
+    "name": "advancedOptions",
+    "displayName": "Opzioni Avanzate",
+    "groupStyle": "NO_ZIPPY",
+    "subParams": [
+      {
+        "type": "CHECKBOX",
+        "name": "valueIncludesTaxAndShipping",
+        "checkboxText": "Il valore dell\u0027ordine include tasse e spese di spedizione",
+        "simpleValueType": true,
+        "help": "Il campo del dataLayer contenente il totale del carrello (value per GA4 o revenue per UA) include le spese di spedizione e le tasse.",
+        "defaultValue": true
+      }
+    ]
   }
 ]
 
@@ -62,11 +78,13 @@ if (!ecommerce) {
   return;
 }
 
-let drtp_oid, drtp_oa, drtp_line_items;
+let value, tax, shipping, drtp_oid, drtp_line_items;
 if (ecommerce.transaction_id) {
   // GA4
   drtp_oid = ecommerce.transaction_id + '_ga4_gtm'; // remove this suffix after test phase
-  drtp_oa = ecommerce.value;
+  value = ecommerce.value;
+  tax = ecommerce.tax;
+  shipping = ecommerce.shipping;
   drtp_line_items = [];
   ecommerce.items.forEach((item) =>
     drtp_line_items.push({ sku: item.item_id, product_name: item.item_name })
@@ -75,7 +93,9 @@ if (ecommerce.transaction_id) {
   // UA
   const purchase = ecommerce.purchase;
   drtp_oid = purchase.actionField.id + '_gtm'; // remove this suffix after test phase
-  drtp_oa = purchase.actionField.revenue;
+  value = purchase.actionField.revenue;
+  tax = purchase.actionField.tax;
+  shipping = purchase.actionField.shipping;
   drtp_line_items = [];
   purchase.products.forEach((product) =>
     drtp_line_items.push({ sku: product.id, product_name: product.name })
@@ -85,6 +105,15 @@ if (ecommerce.transaction_id) {
   data.gtmOnFailure();
   return;
 }
+
+// Compute order amount
+let drtp_oa;
+if (data.valueIncludesTaxAndShipping) {
+    drtp_oa = value;
+} else {
+    drtp_oa = value + tax + shipping;
+}
+
 const drtp_mk = data.merchantKey.trim();
 
 const drtp_pixel =
@@ -96,6 +125,7 @@ const drtp_pixel =
   jsonToQueryString(drtp_line_items, 'items') +
   '&amount=' +
   encodeUriComponent(drtp_oa);
+// logToConsole(drtp_pixel); // enable for debugging tests
 sendPixel(drtp_pixel, data.gtmOnSuccess, data.gtmOnFailure);
 
 function jsonToQueryString(obj, prefix) {
@@ -225,7 +255,8 @@ scenarios:
     });
 
     const mockData = {
-      merchantKey: 'merchantkey123'
+      merchantKey: 'merchantkey123',
+      valueIncludesTaxAndShipping: true,
     };
 
     runCode(mockData);
@@ -257,12 +288,44 @@ scenarios:
     });
 
     const mockData = {
-      merchantKey: 'merchantkey123'
+      merchantKey: 'merchantkey123',
+      valueIncludesTaxAndShipping: true,
     };
 
     runCode(mockData);
 
     assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
+- name: '[GA3] Order with one item (tax/shipping excluded)'
+  code: |-
+    mock('copyFromDataLayer', (key) => {
+      if (key === 'ecommerce') {
+        return {
+          purchase: {
+            actionField: {
+              id: 'order1234',
+              revenue: 100.0,
+              tax: 10,
+              shipping: 5,
+            },
+            products: [
+              {
+                name: 'product name',
+                id: 'sku123',
+              },
+            ],
+          }
+        };
+      }
+    });
+
+    const mockData = {
+      merchantKey: 'merchantkey123',
+      valueIncludesTaxAndShipping: false,
+    };
+
+    runCode(mockData);
+
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=115', success, failure);
 - name: '[GA4] Order with one item'
   code: |-
     mock('copyFromDataLayer', (key) => {
@@ -281,7 +344,8 @@ scenarios:
     });
 
     const mockData = {
-      merchantKey: 'merchantkey123'
+      merchantKey: 'merchantkey123',
+      valueIncludesTaxAndShipping: true,
     };
 
     runCode(mockData);
@@ -309,12 +373,40 @@ scenarios:
     });
 
     const mockData = {
-      merchantKey: 'merchantkey123'
+      merchantKey: 'merchantkey123',
+      valueIncludesTaxAndShipping: true,
     };
 
     runCode(mockData);
 
     assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_ga4_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
+- name: '[GA4] Order with one item (tax/shipping excluded)'
+  code: |-
+    mock('copyFromDataLayer', (key) => {
+      if (key === 'ecommerce') {
+        return {
+          transaction_id: 'order1234',
+          value: 100.0,
+          tax: 10,
+          shipping: 5,
+          items: [
+            {
+              item_name: 'product name',
+              item_id: 'sku123',
+            },
+          ],
+        };
+      }
+    });
+
+    const mockData = {
+      merchantKey: 'merchantkey123',
+      valueIncludesTaxAndShipping: false,
+    };
+
+    runCode(mockData);
+
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_ga4_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=115', success, failure);
 - name: Fail if merchant key not defined
   code: |
     mock('copyFromDataLayer', (key) => {
@@ -349,7 +441,7 @@ scenarios:
     });
 
     const mockData = {
-      merchantKey: 'merchantkey123'
+      merchantKey: 'merchantkey123',
     };
 
     runCode(mockData);
@@ -365,7 +457,7 @@ scenarios:
     });
 
     const mockData = {
-      merchantKey: 'merchantkey123'
+      merchantKey: 'merchantkey123',
     };
 
     runCode(mockData);
