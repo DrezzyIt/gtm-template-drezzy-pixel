@@ -47,10 +47,18 @@ ___TEMPLATE_PARAMETERS___
     "subParams": [
       {
         "type": "CHECKBOX",
-        "name": "valueIncludesTaxAndShipping",
-        "checkboxText": "Il valore dell\u0027ordine include le tasse e le spese di spedizione",
+        "name": "valueIncludesTax",
+        "checkboxText": "Il valore dell\u0027ordine include le tasse",
         "simpleValueType": true,
-        "help": "Il campo del dataLayer contenente il totale del carrello, value per GA4 o revenue per UA, include i valori dei campi tax e shipping.",
+        "help": "Il campo del dataLayer contenente il totale del carrello, value per GA4 o revenue per UA, include il valore del campo tax",
+        "defaultValue": true
+      },
+      {
+        "type": "CHECKBOX",
+        "name": "valueIncludesShipping",
+        "checkboxText": "Il valore dell\u0027ordine include le spese di spedizione",
+        "simpleValueType": true,
+        "help": "Il campo del dataLayer contenente il totale del carrello, value per GA4 o revenue per UA, include il valore del campo shipping",
         "defaultValue": true
       }
     ]
@@ -78,11 +86,11 @@ if (!ecommerce) {
   return;
 }
 
-let value, tax, shipping, drtp_oid, drtp_line_items;
+let tax, shipping, drtp_oid, drtp_oa, drtp_line_items;
 if (ecommerce.transaction_id) {
   // GA4
   drtp_oid = ecommerce.transaction_id + '_ga4_gtm'; // remove this suffix after test phase
-  value = ecommerce.value;
+  drtp_oa = ecommerce.value;
   tax = ecommerce.tax;
   shipping = ecommerce.shipping;
   drtp_line_items = [];
@@ -93,7 +101,7 @@ if (ecommerce.transaction_id) {
   // UA
   const purchase = ecommerce.purchase;
   drtp_oid = purchase.actionField.id + '_gtm'; // remove this suffix after test phase
-  value = purchase.actionField.revenue;
+  drtp_oa = purchase.actionField.revenue;
   tax = purchase.actionField.tax;
   shipping = purchase.actionField.shipping;
   drtp_line_items = [];
@@ -107,11 +115,11 @@ if (ecommerce.transaction_id) {
 }
 
 // Compute order amount
-let drtp_oa;
-if (data.valueIncludesTaxAndShipping) {
-    drtp_oa = value;
-} else {
-    drtp_oa = value + tax + shipping;
+if (!data.valueIncludesTax) {
+    drtp_oa += tax;
+}
+if (!data.valueIncludesTax) {
+    drtp_oa += shipping;
 }
 
 const drtp_mk = data.merchantKey.trim();
@@ -256,7 +264,8 @@ scenarios:
 
     const mockData = {
       merchantKey: 'merchantkey123',
-      valueIncludesTaxAndShipping: true,
+      valueIncludesTax: true,
+      valueIncludesShipping: true,
     };
 
     runCode(mockData);
@@ -289,7 +298,8 @@ scenarios:
 
     const mockData = {
       merchantKey: 'merchantkey123',
-      valueIncludesTaxAndShipping: true,
+      valueIncludesTax: true,
+      valueIncludesShipping: true,
     };
 
     runCode(mockData);
@@ -320,7 +330,8 @@ scenarios:
 
     const mockData = {
       merchantKey: 'merchantkey123',
-      valueIncludesTaxAndShipping: false,
+      valueIncludesTax: false,
+      valueIncludesShipping: false,
     };
 
     runCode(mockData);
@@ -345,7 +356,8 @@ scenarios:
 
     const mockData = {
       merchantKey: 'merchantkey123',
-      valueIncludesTaxAndShipping: true,
+      valueIncludesTax: true,
+      valueIncludesShipping: true,
     };
 
     runCode(mockData);
@@ -374,7 +386,8 @@ scenarios:
 
     const mockData = {
       merchantKey: 'merchantkey123',
-      valueIncludesTaxAndShipping: true,
+      valueIncludesTax: true,
+      valueIncludesShipping: true,
     };
 
     runCode(mockData);
@@ -401,7 +414,8 @@ scenarios:
 
     const mockData = {
       merchantKey: 'merchantkey123',
-      valueIncludesTaxAndShipping: false,
+      valueIncludesTax: false,
+      valueIncludesShipping: false,
     };
 
     runCode(mockData);
