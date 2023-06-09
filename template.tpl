@@ -72,6 +72,7 @@ const copyFromDataLayer = require('copyFromDataLayer');
 const encodeUriComponent = require('encodeUriComponent');
 const logToConsole = require('logToConsole');
 const sendPixel = require('sendPixel');
+const makeNumber = require('makeNumber');
 
 if (!data.hasOwnProperty('merchantKey')) {
   logToConsole('drezzy pixel: chiave merchant non definita');
@@ -90,9 +91,9 @@ let tax, shipping, drtp_oid, drtp_oa, drtp_line_items;
 if (ecommerce.transaction_id) {
   // GA4
   drtp_oid = ecommerce.transaction_id + '_ga4_gtm'; // remove this suffix after test phase
-  drtp_oa = ecommerce.value;
-  tax = ecommerce.tax;
-  shipping = ecommerce.shipping;
+  drtp_oa = makeNumber(ecommerce.value);
+  tax = makeNumber(ecommerce.tax);
+  shipping = makeNumber(ecommerce.shipping);
   drtp_line_items = [];
   ecommerce.items.forEach((item) =>
     drtp_line_items.push({ sku: item.item_id, product_name: item.item_name })
@@ -101,9 +102,9 @@ if (ecommerce.transaction_id) {
   // UA
   const purchase = ecommerce.purchase;
   drtp_oid = purchase.actionField.id + '_gtm'; // remove this suffix after test phase
-  drtp_oa = purchase.actionField.revenue;
-  tax = purchase.actionField.tax;
-  shipping = purchase.actionField.shipping;
+  drtp_oa = makeNumber(purchase.actionField.revenue);
+  tax = makeNumber(purchase.actionField.tax);
+  shipping = makeNumber(purchase.actionField.shipping);
   drtp_line_items = [];
   purchase.products.forEach((product) =>
     drtp_line_items.push({ sku: product.id, product_name: product.name })
@@ -417,6 +418,34 @@ scenarios:
     runCode(mockData);
 
     assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_ga4_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=105', success, failure);
+- name: '[GA4] Right amount when values are text'
+  code: |-
+    mock('copyFromDataLayer', (key) => {
+      if (key === 'ecommerce') {
+        return {
+          transaction_id: 'order1234',
+          value: '100.0',
+          tax: '10',
+          shipping: '5',
+          items: [
+            {
+              item_name: 'product name',
+              item_id: 'sku123',
+            },
+          ],
+        };
+      }
+    });
+
+    const mockData = {
+      merchantKey: 'merchantkey123',
+      valueIncludesTax: false,
+      valueIncludesShipping: false,
+    };
+
+    runCode(mockData);
+
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_ga4_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=115', success, failure);
 - name: Fail if merchant key not defined
   code: |
     mock('copyFromDataLayer', (key) => {
