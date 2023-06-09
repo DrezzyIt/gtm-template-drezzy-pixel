@@ -41,8 +41,8 @@ ___TEMPLATE_PARAMETERS___
   },
   {
     "type": "GROUP",
-    "name": "advancedOptions",
-    "displayName": "Opzioni Avanzate",
+    "name": "cartAmountOptions",
+    "displayName": "Opzioni Totale Carrello",
     "groupStyle": "NO_ZIPPY",
     "subParams": [
       {
