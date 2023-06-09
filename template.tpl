@@ -90,7 +90,7 @@ if (!ecommerce) {
 let tax, shipping, drtp_oid, drtp_oa, drtp_line_items;
 if (ecommerce.transaction_id) {
   // GA4
-  drtp_oid = ecommerce.transaction_id + '_ga4_gtm'; // remove this suffix after test phase
+  drtp_oid = ecommerce.transaction_id; // remove this suffix after test phase
   drtp_oa = makeNumber(ecommerce.value);
   tax = makeNumber(ecommerce.tax);
   shipping = makeNumber(ecommerce.shipping);
@@ -101,7 +101,7 @@ if (ecommerce.transaction_id) {
 } else if (ecommerce.purchase) {
   // UA
   const purchase = ecommerce.purchase;
-  drtp_oid = purchase.actionField.id + '_gtm'; // remove this suffix after test phase
+  drtp_oid = purchase.actionField.id; // remove this suffix after test phase
   drtp_oa = makeNumber(purchase.actionField.revenue);
   tax = makeNumber(purchase.actionField.tax);
   shipping = makeNumber(purchase.actionField.shipping);
@@ -271,7 +271,7 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=100', success, failure);
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=100', success, failure);
 - name: '[GA3] Order with multiple items'
   code: |-
     mock('copyFromDataLayer', (key) => {
@@ -305,7 +305,7 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
 - name: '[GA4] Order with one item'
   code: |-
     mock('copyFromDataLayer', (key) => {
@@ -331,7 +331,7 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_ga4_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=100', success, failure);
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=100', success, failure);
 - name: '[GA4] Order with multiple items'
   code: |-
     mock('copyFromDataLayer', (key) => {
@@ -361,7 +361,7 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_ga4_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&items[1][sku]=sku321&items[1][product_name]=product%20name%202&amount=100', success, failure);
 - name: '[GA4] Order with one item (tax excluded)'
   code: |-
     mock('copyFromDataLayer', (key) => {
@@ -389,7 +389,7 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_ga4_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=110', success, failure);
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=110', success, failure);
 - name: '[GA4] Order with one item (shipping excluded)'
   code: |-
     mock('copyFromDataLayer', (key) => {
@@ -417,7 +417,7 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_ga4_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=105', success, failure);
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=105', success, failure);
 - name: '[GA4] Right amount when values are text'
   code: |-
     mock('copyFromDataLayer', (key) => {
@@ -445,7 +445,7 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234_ga4_gtm&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=115', success, failure);
+    assertApi('sendPixel').wasCalledWith('https://www.drezzy.it/api/orders/v1.0/tr.png?merchant_name=merchantkey123&order_id=order1234&items[0][sku]=sku123&items[0][product_name]=product%20name&amount=115', success, failure);
 - name: Fail if merchant key not defined
   code: |
     mock('copyFromDataLayer', (key) => {
