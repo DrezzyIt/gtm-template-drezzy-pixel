@@ -14,6 +14,3 @@
 
 homepage: "https://drezzy.it"
 documentation: "https://www.drezzy.it/it/gtm_it.html"
-versions:
-  - sha: 5f02a788b90ae804f86b04aa24af8937e567874a
-    changeNotes: Initial Version
