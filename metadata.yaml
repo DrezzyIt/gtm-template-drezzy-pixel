@@ -14,3 +14,6 @@
 
 homepage: "https://drezzy.it"
 documentation: "https://www.drezzy.it/it/gtm_it.html"
+versions:
+  - sha: af75131db6f3006523a70114db15f8d14ceff733
+    changeNotes: First version of the drezzy pixel 
